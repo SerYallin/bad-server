@@ -1,5 +1,5 @@
 import DOMPurify from 'dompurify';
-export function sanitizeText(text, allowLink = false) {
+export function sanitizeText(text: string|Node, allowLink: boolean = false) {
   const configs = allowLink ? {
     ALLOWED_TAGS: ['a'],
     ALLOWED_ATTR: ['href'],
@@ -7,7 +7,7 @@ export function sanitizeText(text, allowLink = false) {
   } : {};
   return DOMPurify.sanitize(text, configs);
 }
-export function sanitizeUrl(url) {
+export function sanitizeUrl(url: string) {
   try {
     const parsedUrl = new URL(url);
     const allowedProtocols = ['http:', 'https:'];
