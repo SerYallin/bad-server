@@ -21,6 +21,7 @@ import FileInput from '../form/file-input'
 import Select from '../select'
 import styles from './admin.module.scss'
 import { ProductFormValues } from './helpers/types'
+import { sanitizeImageFile } from '../../utils/sanitizers.ts';
 
 export default function AdminEditProduct() {
     const navigate = useNavigate()
@@ -44,16 +45,25 @@ export default function AdminEditProduct() {
     const isValidForm = isValid && Boolean(selectedCategory)
     const navigateAdminList = () => navigate(AppRoute.Admin)
 
-    const handleFileChange = (e: SyntheticEvent<HTMLInputElement>) => {
-        if (e.currentTarget.files?.length) {
-            const dataFile = new FormData()
-            dataFile.append('file', e.currentTarget.files[0])
+    const handleFileChange = async (e: SyntheticEvent<HTMLInputElement>) => {
+        const files = e.currentTarget.files;
 
-            uploadImageFile(dataFile)
-                .unwrap()
-                .then((data) => {
-                    setSelectedFile(data)
-                })
+        if (files?.length) {
+          const file = files[0];
+          const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml'];
+          if (!allowedTypes.includes(file.type)) {
+            alert('Недопустимый тип файла');
+            return;
+          }
+          const sanitizedFile = await sanitizeImageFile(file);
+          const dataFile = new FormData()
+          dataFile.append('file', sanitizedFile)
+
+          uploadImageFile(dataFile)
+              .unwrap()
+              .then((data) => {
+                  setSelectedFile(data)
+              })
         }
     }
 

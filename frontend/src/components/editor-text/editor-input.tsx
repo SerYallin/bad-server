@@ -6,6 +6,7 @@ import {
     Toolbar,
 } from 'react-simple-wysiwyg'
 import './editor-input.scss'
+import { sanitizeText, sanitizeUrl } from '../../utils/sanitizers.ts';
 
 type EditorInputProps = {
     value: string
@@ -14,7 +15,7 @@ type EditorInputProps = {
 
 export default function EditorInput({ onChange, value }: EditorInputProps) {
     function handleChangeElement(e: ContentEditableEvent) {
-        onChange(e.target.value)
+        onChange(sanitizeText(e.target.value, true))
     }
 
     const BtnLinkCustom = createButton(
@@ -28,7 +29,7 @@ export default function EditorInput({ onChange, value }: EditorInputProps) {
                 document.execCommand(
                     'createLink',
                     false,
-                    prompt('URL', '') || undefined
+                    sanitizeUrl(prompt('URL', '')) || undefined
                 )
             }
         }
