@@ -72,7 +72,7 @@ const RouteComponent = () => {
 
     useEffect(() => {
       if (csrfToken) {
-        checkUserAuth(csrfToken)
+        checkUserAuth()
           .unwrap()
           .finally(() => authCheck())
       }

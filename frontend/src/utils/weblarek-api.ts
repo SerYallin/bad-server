@@ -57,11 +57,12 @@ class Api {
     protected async request<T>(endpoint: string, options: RequestInit) {
         try {
             const method = options.method || 'GET';
-            const headers = options.headers || {}
             const token = await getCookie('sstoken');
-            if (token && (method !== 'GET' || method !== 'OPTIONS')) {
-              headers['x-xsrf-token'] = token;
-              options.headers = headers;
+            if (token && method !== 'GET' && method !== 'OPTIONS') {
+              options.headers = {
+                ...options.headers,
+                'x-xsrf-token': token,
+              } as HeadersInit;
             }
             const res = await fetch(`${this.baseUrl}${endpoint}`, {
                 ...this.options,
