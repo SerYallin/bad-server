@@ -1,12 +1,14 @@
 /* eslint-disable no-param-reassign */
 import crypto from 'crypto'
-import jwt from 'jsonwebtoken'
+import jwt, { Secret } from 'jsonwebtoken'
 import mongoose, { Document, HydratedDocument, Model, Types } from 'mongoose'
 import validator from 'validator'
 import md5 from 'md5'
 
+import { StringValue } from 'ms';
 import { ACCESS_TOKEN, REFRESH_TOKEN } from '../config'
 import UnauthorizedError from '../errors/unauthorized-error'
+
 
 export enum Role {
     Customer = 'customer',
@@ -14,6 +16,7 @@ export enum Role {
 }
 
 export interface IUser extends Document {
+    _id: Types.ObjectId
     name: string
     email: string
     password: string
@@ -30,7 +33,7 @@ export interface IUser extends Document {
 interface IUserMethods {
     generateAccessToken(): string
     generateRefreshToken(): Promise<string>
-    toJSON(): string
+    toJSON(): object
     calculateOrderStats(): Promise<void>
 }
 
@@ -106,11 +109,12 @@ const userSchema = new mongoose.Schema<IUser, IUserModel, IUserMethods>(
         toJSON: {
             virtuals: true,
             transform: (_doc, ret) => {
-                delete ret.tokens
-                delete ret.password
-                delete ret._id
-                delete ret.roles
-                return ret
+                const object = JSON.parse(JSON.stringify(ret));
+                delete object.tokens
+                delete object.password
+                delete object._id
+                delete object.roles
+                return object
             },
         },
     }
@@ -138,9 +142,9 @@ userSchema.methods.generateAccessToken = function generateAccessToken() {
             _id: user._id.toString(),
             email: user.email,
         },
-        ACCESS_TOKEN.secret,
+        ACCESS_TOKEN.secret as Secret,
         {
-            expiresIn: ACCESS_TOKEN.expiry,
+            expiresIn: ACCESS_TOKEN.expiry as StringValue,
             subject: user.id.toString(),
         }
     )
@@ -154,9 +158,9 @@ userSchema.methods.generateRefreshToken =
             {
                 _id: user._id.toString(),
             },
-            REFRESH_TOKEN.secret,
+            REFRESH_TOKEN.secret as Secret,
             {
-                expiresIn: REFRESH_TOKEN.expiry,
+                expiresIn: REFRESH_TOKEN.expiry as StringValue,
                 subject: user.id.toString(),
             }
         )

@@ -26,5 +26,16 @@ export default defineConfig({
       },
     }
   },
-
+  server: {
+    port: 5174,
+    strictPort: true,
+    origin: 'http://localhost:5174',
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000', // замените на ваш адрес бекенда
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ''), // если нужно убрать /api из пути
+      },
+    }
+  }
 })

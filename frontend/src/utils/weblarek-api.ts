@@ -17,6 +17,7 @@ import {
     UserResponseToken,
 } from '@types'
 import { getCookie, setCookie } from './cookie'
+import { TCsrfState } from '@slices/csrf';
 
 export const enum RequestStatus {
     Idle = 'idle',
@@ -55,6 +56,13 @@ class Api {
 
     protected async request<T>(endpoint: string, options: RequestInit) {
         try {
+            const method = options.method || 'GET';
+            const headers = options.headers || {}
+            const token = await getCookie('sstoken');
+            if (token && (method !== 'GET' || method !== 'OPTIONS')) {
+              headers['x-xsrf-token'] = token;
+              options.headers = headers;
+            }
             const res = await fetch(`${this.baseUrl}${endpoint}`, {
                 ...this.options,
                 ...options,
@@ -353,6 +361,15 @@ export class WebLarekAPI extends Api implements IWebLarekAPI {
                 Authorization: `Bearer ${getCookie('accessToken')}`,
             },
         })
+    }
+    getCsrfToken = async () => {
+      const token = await this.request<TCsrfState>('/csrf-token', {
+        method: 'GET'
+      })
+      if (token && token.csrfToken) {
+        setCookie('sstoken', token.csrfToken);
+      }
+      return token;
     }
 }
 

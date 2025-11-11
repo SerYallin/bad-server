@@ -9,16 +9,21 @@ import { DB_ADDRESS } from './config'
 import errorHandler from './middlewares/error-handler'
 import serveStatic from './middlewares/serverStatic'
 import routes from './routes'
+import csrf from 'csurf'
 
 const { PORT = 3000 } = process.env
 const app = express()
 
 app.use(cookieParser())
 
+const csrfProtection = csrf({ cookie: true  })
+app.use(csrfProtection)
+
 app.use(cors({
     origin: 'http://localhost:5174', // или URL вашего фронтенда
     credentials: true
 }));
+// app.use(cors());
 // app.use(cors({ origin: ORIGIN_ALLOW, credentials: true }));
 // app.use(express.static(path.join(__dirname, 'public')));
 
@@ -27,7 +32,7 @@ app.use(serveStatic(path.join(__dirname, 'public')))
 app.use(urlencoded({ extended: true }))
 app.use(json())
 
-app.options('*', cors())
+app.options('', cors())
 app.use(routes)
 app.use(errors())
 app.use(errorHandler)

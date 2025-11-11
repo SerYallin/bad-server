@@ -13,6 +13,7 @@ export enum StatusType {
 }
 
 export interface IOrder extends Document {
+    _id: Types.ObjectId
     id: Types.ObjectId
     orderNumber: number
     status: string
