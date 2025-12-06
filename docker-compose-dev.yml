@@ -13,6 +13,7 @@ services:
       - internal
 
 volumes:
+  public:
   db:
 
 networks:

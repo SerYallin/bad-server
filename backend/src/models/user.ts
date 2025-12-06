@@ -8,6 +8,11 @@ import md5 from 'md5'
 import { StringValue } from 'ms';
 import { ACCESS_TOKEN, REFRESH_TOKEN } from '../config'
 import UnauthorizedError from '../errors/unauthorized-error'
+import {
+    emailCharsRegex, nameRegex,
+    passwordRegExp,
+    phoneRegExp, tokensRegex
+} from '../middlewares/validations';
 
 
 export enum Role {
@@ -51,29 +56,52 @@ const userSchema = new mongoose.Schema<IUser, IUserModel, IUserMethods>(
             default: 'Евлампий',
             minlength: [2, 'Минимальная длина поля "name" - 2'],
             maxlength: [30, 'Максимальная длина поля "name" - 30'],
+            validate: {
+                validator: (v: string) => (nameRegex.test(v)),
+                message: 'Имя содержит недопустимые символы',
+            }
         },
         // в схеме пользователя есть обязательные email и password
         email: {
             type: String,
             required: [true, 'Поле "email" должно быть заполнено'],
             unique: true, // поле email уникально (есть опция unique: true);
-            validate: {
-                // для проверки email студенты используют validator
-                validator: (v: string) => validator.isEmail(v),
-                message: 'Поле "email" должно быть валидным email-адресом',
-            },
+            maxlength: [255, 'Email не должен превышать 255 символов'],
+            validate: [
+                {
+                    // для проверки email студенты используют validator
+                    validator: (v: string) => validator.isEmail(v),
+                    message: 'Поле "email" должно быть валидным email-адресом',
+                },
+                {
+                    validator: (v: string) => emailCharsRegex.test(v),
+                    message: 'Email содержит недопустимые символы',
+                }
+            ]
         },
         // поле password не имеет ограничения на длину, т.к. пароль хранится в виде хэша
         password: {
             type: String,
             required: [true, 'Поле "password" должно быть заполнено'],
             minlength: [6, 'Минимальная длина поля "password" - 6'],
+            validate: {
+                validator: (v: string) => passwordRegExp.test(v),
+                message: 'Пароль содержит недопустимые символы',
+            },
             select: false,
         },
 
         tokens: [
             {
-                token: { required: true, type: String },
+                token: { 
+                    required: true, 
+                    type: String,
+                    maxlength: 2048,
+                    validate: {
+                        validator: (v) => (tokensRegex.test(v)),
+                        message: `Некорректный токен`
+                    }
+                },
             },
         ],
         roles: {
@@ -83,6 +111,12 @@ const userSchema = new mongoose.Schema<IUser, IUserModel, IUserMethods>(
         },
         phone: {
             type: String,
+            minlength: [6, 'Минимальная длина поля "phone" - 6'],
+            maxlength: [20, 'Максимальная длина поля "phone" - 20'],
+            validate: {
+                validator: (v: string) => phoneRegExp.test(v),
+                message: 'Поле "phone" должно быть валидным телефоном.',
+            }
         },
         lastOrderDate: {
             type: Date,

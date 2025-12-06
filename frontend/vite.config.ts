@@ -27,9 +27,9 @@ export default defineConfig({
     }
   },
   server: {
-    port: 5174,
+    port: 80,
     strictPort: true,
-    origin: 'http://localhost:5174',
+    origin: 'http://localhost',
     proxy: {
       '/api': {
         target: 'http://localhost:3000', // замените на ваш адрес бекенда

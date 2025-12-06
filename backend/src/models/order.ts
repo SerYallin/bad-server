@@ -1,7 +1,11 @@
 /* eslint-disable prefer-arrow-callback */
 import mongoose, { Document, Schema, Types } from 'mongoose'
 import validator from 'validator'
-import { PaymentType, phoneRegExp } from '../middlewares/validations'
+import {
+    emailCharsRegex,
+    PaymentType,
+    phoneRegExp
+} from '../middlewares/validations'
 import Counter from './counter'
 import User from './user'
 
@@ -47,15 +51,29 @@ const orderSchema: Schema = new Schema(
             enum: Object.values(PaymentType),
             required: true,
         },
-        customer: { type: Types.ObjectId, ref: 'user' },
-        deliveryAddress: { type: String },
+        customer: { 
+            type: Types.ObjectId, 
+            ref: 'user' 
+        },
+        deliveryAddress: { 
+            type: String,
+            maxlength: [500, 'Адрес доставки не должен превышать 500 символов'],
+        },
         email: {
             type: String,
             required: [true, 'Поле "email" должно быть заполнено'],
-            validate: {
-                validator: (v: string) => validator.isEmail(v),
-                message: 'Поле "email" должно быть валидным email-адресом',
-            },
+            maxlength: [255, 'Email не должен превышать 255 символов'],
+            validate: [
+                {
+                    // для проверки email студенты используют validator
+                    validator: (v: string) => validator.isEmail(v),
+                    message: 'Поле "email" должно быть валидным email-адресом',
+                },
+                {
+                    validator: (v: string) => emailCharsRegex.test(v),
+                    message: 'Email содержит недопустимые символы',
+                }
+            ],
         },
         phone: {
             type: String,
@@ -68,6 +86,7 @@ const orderSchema: Schema = new Schema(
         comment: {
             type: String,
             default: '',
+            maxlength: [1000, 'Комментарий не должен превышать 1000 символов'],
         },
     },
     { versionKey: false, timestamps: true }

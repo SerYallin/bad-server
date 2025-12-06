@@ -7,14 +7,16 @@ import ConflictError from '../errors/conflict-error'
 import NotFoundError from '../errors/not-found-error'
 import Product from '../models/product'
 import movingFile from '../utils/movingFile'
+import escapeRegExp from '../utils/escapeRegExp';
 
 // GET /product
 const getProducts = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { page = 1, limit = 5 } = req.query
+        const limitResult = Math.min(Number(limit), 10);
         const options = {
-            skip: (Number(page) - 1) * Number(limit),
-            limit: Number(limit),
+            skip: (Number(page) - 1) * limitResult,
+            limit: limitResult,
         }
         const products = await Product.find({}, null, options)
         const totalProducts = await Product.countDocuments({})
@@ -25,7 +27,7 @@ const getProducts = async (req: Request, res: Response, next: NextFunction) => {
                 totalProducts,
                 totalPages,
                 currentPage: Number(page),
-                pageSize: Number(limit),
+                pageSize: limitResult,
             },
         })
     } catch (err) {
@@ -52,11 +54,11 @@ const createProduct = async (
         }
 
         const product = await Product.create({
-            description,
+            description: escapeRegExp(description),
             image,
-            category,
+            category: escapeRegExp(category),
             price,
-            title,
+            title: escapeRegExp(title),
         })
         return res.status(constants.HTTP_STATUS_CREATED).send(product)
     } catch (error) {
@@ -86,7 +88,7 @@ const updateProduct = async (
         // Переносим картинку из временной папки
         if (image) {
             movingFile(
-                image.fileName,
+                escapeRegExp(image.fileName),
                 join(__dirname, `../public/${process.env.UPLOAD_PATH_TEMP}`),
                 join(__dirname, `../public/${process.env.UPLOAD_PATH}`)
             )
