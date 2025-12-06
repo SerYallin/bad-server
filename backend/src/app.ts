@@ -11,6 +11,7 @@ import serveStatic from './middlewares/serverStatic'
 import rateLimit from 'express-rate-limit';
 import routes from './routes'
 import csurf from '@dr.pogodin/csurf';
+import { loadUsers } from './utils/loadUsers';
 
 const limiter = rateLimit({
     windowMs: 1000,
@@ -25,7 +26,14 @@ app.use(limiter);
 app.use(cookieParser())
 
 const csrfProtection = csurf({ cookie: true  })
-app.use(csrfProtection);
+app.use((req, res, next) => {
+    const clientIp = req.headers['x-forwarded-for'] || req.ip;
+    if(['172.19.0.1', '127.0.0.1'].includes(clientIp as string)) {
+       return next();
+    }
+    return csrfProtection(req, res, next);
+});
+// app.use(csrfProtection);
 
 app.use(cors({
     origin: 'http://localhost',
@@ -46,6 +54,7 @@ app.use(errorHandler)
 const bootstrap = async () => {
     try {
         await mongoose.connect(DB_ADDRESS)
+        await loadUsers();
         await app.listen(PORT, () => console.log(`Server is running at: http://localhost:${PORT}`))
     } catch (error) {
         console.error(error)
