@@ -1,6 +1,9 @@
-import { Request, Express } from 'express'
+import { Request, Response, Express, NextFunction } from 'express'
 import multer, { FileFilterCallback } from 'multer'
 import { join } from 'path'
+import fs from 'fs';
+import sharp from 'sharp';
+import BadRequestError from '../errors/bad-request-error';
 
 type DestinationCallback = (error: Error | null, destination: string) => void
 type FileNameCallback = (error: Error | null, filename: string) => void
@@ -31,6 +34,8 @@ const storage = multer.diskStorage({
     },
 })
 
+// const storage = multer.memoryStorage();
+
 const types = [
     'image/png',
     'image/jpg',
@@ -52,3 +57,26 @@ const fileFilter = (
 }
 
 export default multer({ storage, fileFilter })
+
+export const checkFileSize = async (req: Request, _res: Response, next: NextFunction) => {
+    if (req.file) {
+        try {
+            const buffer = await fs.readFileSync(req.file.path)
+            const metadata = await sharp(buffer).metadata();
+            if (!metadata.format || !types.includes(`image/${metadata.format}`)) {
+                return next(new BadRequestError('Invalid file type'));
+            }
+        }
+        catch (error) {
+            return next(new BadRequestError(error.message));
+        }
+ 
+        if (req.file.size < 2 * 1024 ) {
+            return next(new BadRequestError('Invalid file size must be more than 2MB'));
+        }
+        if (req.file.size > 10 * 1024 * 1024 ) {
+            return next(new BadRequestError('Invalid file size must be less than 10MB'))
+        }
+    }
+    next()
+}

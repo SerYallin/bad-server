@@ -15,7 +15,7 @@ import { loadUsers } from './utils/loadUsers';
 
 const limiter = rateLimit({
     windowMs: 1000,
-    limit: 50,
+    limit: 30,
     message: 'Too lot of requests',
 });
 
@@ -36,7 +36,7 @@ app.use((req, res, next) => {
 // app.use(csrfProtection);
 
 app.use(cors({
-    origin: 'http://localhost',
+    origin: process.env.ORIGIN_ALLOW || 'http://localhost:5173',
 }));
 
 // app.use(express.static(path.join(__dirname, 'public')));
