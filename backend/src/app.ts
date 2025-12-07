@@ -12,6 +12,7 @@ import rateLimit from 'express-rate-limit';
 import routes from './routes'
 import csurf from '@dr.pogodin/csurf';
 import { loadUsers } from './utils/loadUsers';
+import fs from 'fs';
 
 const limiter = rateLimit({
     windowMs: 1000,
@@ -43,6 +44,13 @@ app.use(cors({
 }));
 
 // app.use(express.static(path.join(__dirname, 'public')));
+
+const tempDir = path.join(__dirname, 'public', process.env.UPLOAD_PATH_TEMP || 'temp');
+console.log(tempDir)
+if (!fs.existsSync(tempDir)) {
+    fs.mkdirSync(tempDir, { recursive: true });
+}
+console.log(fs.existsSync(tempDir));
 
 app.use(serveStatic(path.join(__dirname, 'public')))
 
