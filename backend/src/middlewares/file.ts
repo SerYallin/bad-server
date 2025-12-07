@@ -67,8 +67,8 @@ export const checkFileSize = async (req: Request, _res: Response, next: NextFunc
                 return next(new BadRequestError('Invalid file type'));
             }
         }
-        catch (error) {
-            return next(new BadRequestError(error.message));
+        catch (_error) {
+            return next(new BadRequestError('Invalid file type'));
         }
  
         if (req.file.size < 2 * 1024 ) {

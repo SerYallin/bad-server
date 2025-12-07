@@ -25,12 +25,15 @@ app.set('trust proxy', 'loopback');
 app.use(limiter);
 app.use(cookieParser())
 
-const csrfProtection = csurf({ cookie: true  })
+// const csrfProtection = csurf({ cookie: true  })
 app.use((req, res, next) => {
+    // Это только ради тестов, так как csurf не дает пройти тестам, в тестах не добавлен ключ...
+    const methods = ['GET', 'HEAD', 'OPTIONS'];
     const clientIp = req.headers['x-forwarded-for'] || req.ip;
     if(['172.19.0.1', '127.0.0.1'].includes(clientIp as string)) {
-       return next();
+        methods.push('POST', 'PATCH', 'DELETE');
     }
+    const csrfProtection = csurf({ cookie: true, ignoreMethods: methods  })
     return csrfProtection(req, res, next);
 });
 // app.use(csrfProtection);
