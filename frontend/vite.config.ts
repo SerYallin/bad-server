@@ -20,12 +20,22 @@ export default defineConfig({
     preprocessorOptions: {
       scss: {
         additionalData: `
-          @use "./src/scss/variables" as *;
-          @use "./src/scss/mixins";
+          @use "${resolve(__dirname, 'src/scss/variables')}" as *;
+          @use "${resolve(__dirname, 'src/scss/mixins')}";
         `,
       },
-
     }
   },
-
+  server: {
+    port: 80,
+    strictPort: true,
+    origin: 'http://localhost',
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000', // замените на ваш адрес бекенда
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ''), // если нужно убрать /api из пути
+      },
+    }
+  }
 })

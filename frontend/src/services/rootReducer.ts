@@ -8,6 +8,7 @@ import { userSlice } from '@slices/user/user-slice'
 import persistReducer from 'redux-persist/es/persistReducer'
 import storage from 'redux-persist/lib/storage'
 import basketSlice from './slice/basket'
+import csrfSlice from '@slices/csrf';
 
 const persistConfigBasket = {
     key: 'basket',
@@ -34,4 +35,5 @@ export const rootReducer = combineReducers({
     [ordersSlice.name]: ordersSlice.reducer,
     [customersSlice.name]: customersSlice.reducer,
     [profileOrdersSlice.name]: profileOrdersSlice.reducer,
+    [csrfSlice.name]: csrfSlice.reducer,
 })

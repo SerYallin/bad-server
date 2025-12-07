@@ -39,12 +39,13 @@ import { userActions } from '@slices/user'
 import { useActionCreators } from '@store/hooks'
 import store, { persistor } from '@store/store'
 import { PropsWithChildren, useEffect } from 'react'
-import { Provider } from 'react-redux'
+import { Provider, useSelector } from 'react-redux'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import { PersistGate } from 'redux-persist/integration/react'
 import AdminCustomerDetail from '../admin/admin-customer-detail'
 import ProfileOrderDetail from '../profile/profile-order-detail'
+import { getCsrfToken, selectCsrfToken } from '@slices/csrf';
 
 const App = () => (
     <BrowserRouter>
@@ -61,14 +62,21 @@ export default App
 const RouteComponent = () => {
     const location = useLocation()
     const navigate = useNavigate()
+    const { loadCsrfToken } = useActionCreators({loadCsrfToken: getCsrfToken})
+    const csrfToken = useSelector(selectCsrfToken);
     const { authCheck, checkUserAuth } = useActionCreators(userActions)
     const handleModalClose = (path: To | number) => () => navigate(path as To)
+    useEffect(() => {
+      loadCsrfToken();
+    }, []);
 
     useEffect(() => {
+      if (csrfToken) {
         checkUserAuth()
-            .unwrap()
-            .finally(() => authCheck())
-    }, [checkUserAuth, authCheck])
+          .unwrap()
+          .finally(() => authCheck())
+      }
+    }, [csrfToken, checkUserAuth, authCheck])
 
     const locationState = location.state as { background?: Location }
     const background = locationState && locationState.background

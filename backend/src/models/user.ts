@@ -1,12 +1,19 @@
 /* eslint-disable no-param-reassign */
 import crypto from 'crypto'
-import jwt from 'jsonwebtoken'
+import jwt, { Secret } from 'jsonwebtoken'
 import mongoose, { Document, HydratedDocument, Model, Types } from 'mongoose'
 import validator from 'validator'
 import md5 from 'md5'
 
+import { StringValue } from 'ms';
 import { ACCESS_TOKEN, REFRESH_TOKEN } from '../config'
 import UnauthorizedError from '../errors/unauthorized-error'
+import {
+    emailCharsRegex, nameRegex,
+    passwordRegExp,
+    phoneRegExp, tokensRegex
+} from '../middlewares/validations';
+
 
 export enum Role {
     Customer = 'customer',
@@ -14,6 +21,7 @@ export enum Role {
 }
 
 export interface IUser extends Document {
+    _id: Types.ObjectId
     name: string
     email: string
     password: string
@@ -30,7 +38,7 @@ export interface IUser extends Document {
 interface IUserMethods {
     generateAccessToken(): string
     generateRefreshToken(): Promise<string>
-    toJSON(): string
+    toJSON(): object
     calculateOrderStats(): Promise<void>
 }
 
@@ -48,29 +56,52 @@ const userSchema = new mongoose.Schema<IUser, IUserModel, IUserMethods>(
             default: 'Евлампий',
             minlength: [2, 'Минимальная длина поля "name" - 2'],
             maxlength: [30, 'Максимальная длина поля "name" - 30'],
+            validate: {
+                validator: (v: string) => (nameRegex.test(v)),
+                message: 'Имя содержит недопустимые символы',
+            }
         },
         // в схеме пользователя есть обязательные email и password
         email: {
             type: String,
             required: [true, 'Поле "email" должно быть заполнено'],
             unique: true, // поле email уникально (есть опция unique: true);
-            validate: {
-                // для проверки email студенты используют validator
-                validator: (v: string) => validator.isEmail(v),
-                message: 'Поле "email" должно быть валидным email-адресом',
-            },
+            maxlength: [255, 'Email не должен превышать 255 символов'],
+            validate: [
+                {
+                    // для проверки email студенты используют validator
+                    validator: (v: string) => validator.isEmail(v),
+                    message: 'Поле "email" должно быть валидным email-адресом',
+                },
+                {
+                    validator: (v: string) => emailCharsRegex.test(v),
+                    message: 'Email содержит недопустимые символы',
+                }
+            ]
         },
         // поле password не имеет ограничения на длину, т.к. пароль хранится в виде хэша
         password: {
             type: String,
             required: [true, 'Поле "password" должно быть заполнено'],
             minlength: [6, 'Минимальная длина поля "password" - 6'],
+            validate: {
+                validator: (v: string) => passwordRegExp.test(v),
+                message: 'Пароль содержит недопустимые символы',
+            },
             select: false,
         },
 
         tokens: [
             {
-                token: { required: true, type: String },
+                token: { 
+                    required: true, 
+                    type: String,
+                    maxlength: 2048,
+                    validate: {
+                        validator: (v) => (tokensRegex.test(v)),
+                        message: `Некорректный токен`
+                    }
+                },
             },
         ],
         roles: {
@@ -80,6 +111,12 @@ const userSchema = new mongoose.Schema<IUser, IUserModel, IUserMethods>(
         },
         phone: {
             type: String,
+            minlength: [6, 'Минимальная длина поля "phone" - 6'],
+            maxlength: [20, 'Максимальная длина поля "phone" - 20'],
+            validate: {
+                validator: (v: string) => phoneRegExp.test(v),
+                message: 'Поле "phone" должно быть валидным телефоном.',
+            }
         },
         lastOrderDate: {
             type: Date,
@@ -106,11 +143,12 @@ const userSchema = new mongoose.Schema<IUser, IUserModel, IUserMethods>(
         toJSON: {
             virtuals: true,
             transform: (_doc, ret) => {
-                delete ret.tokens
-                delete ret.password
-                delete ret._id
-                delete ret.roles
-                return ret
+                const object = JSON.parse(JSON.stringify(ret));
+                delete object.tokens
+                delete object.password
+                delete object._id
+                delete object.roles
+                return object
             },
         },
     }
@@ -138,9 +176,9 @@ userSchema.methods.generateAccessToken = function generateAccessToken() {
             _id: user._id.toString(),
             email: user.email,
         },
-        ACCESS_TOKEN.secret,
+        ACCESS_TOKEN.secret as Secret,
         {
-            expiresIn: ACCESS_TOKEN.expiry,
+            expiresIn: ACCESS_TOKEN.expiry as StringValue,
             subject: user.id.toString(),
         }
     )
@@ -154,9 +192,9 @@ userSchema.methods.generateRefreshToken =
             {
                 _id: user._id.toString(),
             },
-            REFRESH_TOKEN.secret,
+            REFRESH_TOKEN.secret as Secret,
             {
-                expiresIn: REFRESH_TOKEN.expiry,
+                expiresIn: REFRESH_TOKEN.expiry as StringValue,
                 subject: user.id.toString(),
             }
         )

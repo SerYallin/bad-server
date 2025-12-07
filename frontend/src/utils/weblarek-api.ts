@@ -17,6 +17,7 @@ import {
     UserResponseToken,
 } from '@types'
 import { getCookie, setCookie } from './cookie'
+import { TCsrfState } from '@slices/csrf';
 
 export const enum RequestStatus {
     Idle = 'idle',
@@ -55,6 +56,14 @@ class Api {
 
     protected async request<T>(endpoint: string, options: RequestInit) {
         try {
+            const method = options.method || 'GET';
+            const token = await getCookie('sstoken');
+            if (token && method !== 'GET' && method !== 'OPTIONS') {
+              options.headers = {
+                ...options.headers,
+                'x-xsrf-token': token,
+              } as HeadersInit;
+            }
             const res = await fetch(`${this.baseUrl}${endpoint}`, {
                 ...this.options,
                 ...options,
@@ -147,7 +156,7 @@ export class WebLarekAPI extends Api implements IWebLarekAPI {
     }
 
     createOrder = (order: IOrder): Promise<IOrderResult> => {
-        return this.requestWithRefresh<IOrderResult>('/order', {
+        return this.requestWithRefresh<IOrderResult>('/orders', {
             method: 'POST',
             body: JSON.stringify(order),
             headers: {
@@ -161,7 +170,7 @@ export class WebLarekAPI extends Api implements IWebLarekAPI {
         status: StatusType,
         orderNumber: string
     ): Promise<IOrderResult> => {
-        return this.requestWithRefresh<IOrderResult>(`/order/${orderNumber}`, {
+        return this.requestWithRefresh<IOrderResult>(`/orders/${orderNumber}`, {
             method: 'PATCH',
             body: JSON.stringify({ status }),
             headers: {
@@ -178,7 +187,7 @@ export class WebLarekAPI extends Api implements IWebLarekAPI {
             filters as Record<string, string>
         ).toString()
         return this.requestWithRefresh<IOrderPaginationResult>(
-            `/order/all?${queryParams}`,
+            `/orders/all?${queryParams}`,
             {
                 method: 'GET',
                 headers: {
@@ -195,7 +204,7 @@ export class WebLarekAPI extends Api implements IWebLarekAPI {
             filters as Record<string, string>
         ).toString()
         return this.requestWithRefresh<IOrderPaginationResult>(
-            `/order/all/me?${queryParams}`,
+            `/orders/all/me?${queryParams}`,
             {
                 method: 'GET',
                 headers: {
@@ -206,7 +215,7 @@ export class WebLarekAPI extends Api implements IWebLarekAPI {
     }
 
     getOrderByNumber = (orderNumber: string): Promise<IOrderResult> => {
-        return this.requestWithRefresh<IOrderResult>(`/order/${orderNumber}`, {
+        return this.requestWithRefresh<IOrderResult>(`/orders/${orderNumber}`, {
             method: 'GET',
             headers: { Authorization: `Bearer ${getCookie('accessToken')}` },
         })
@@ -216,7 +225,7 @@ export class WebLarekAPI extends Api implements IWebLarekAPI {
         orderNumber: string
     ): Promise<IOrderResult> => {
         return this.requestWithRefresh<IOrderResult>(
-            `/order/me/${orderNumber}`,
+            `/orders/me/${orderNumber}`,
             {
                 method: 'GET',
                 headers: {
@@ -299,7 +308,6 @@ export class WebLarekAPI extends Api implements IWebLarekAPI {
     }
 
     createProduct = (data: Omit<IProduct, '_id'>) => {
-        console.log(data)
         return this.requestWithRefresh<IProduct>('/product', {
             method: 'POST',
             body: JSON.stringify(data),
@@ -353,6 +361,15 @@ export class WebLarekAPI extends Api implements IWebLarekAPI {
                 Authorization: `Bearer ${getCookie('accessToken')}`,
             },
         })
+    }
+    getCsrfToken = async () => {
+      const token = await this.request<TCsrfState>('/csrf-token', {
+        method: 'GET'
+      })
+      if (token && token.csrfToken) {
+        setCookie('sstoken', token.csrfToken);
+      }
+      return token;
     }
 }
 
